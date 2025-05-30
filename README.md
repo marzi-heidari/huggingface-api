@@ -1,34 +1,81 @@
-# HuggingFace Sentiment Analysis API
+# HuggingFace Inference API (Production-Ready Setup)
 
-This project provides a containerized REST API for serving HuggingFace models with support for concurrent inference using FastAPI and Gunicorn.
+This project provides a containerized, scalable REST API for serving HuggingFace transformer models using FastAPI, with a robust production setup including:
 
----
-
-## Features
-
-- Scalable inference with Uvicorn workers via Gunicorn
-- Based on `distilbert-base-uncased-finetuned-sst-2-english`
-- Fast startup and low latency
-- Dockerized for easy deployment
-- Parallel request demo via Jupyter Notebook
+- **NGINX** (reverse proxy, request routing)
+- **Gunicorn** (process manager)
+- **Uvicorn** (ASGI server for FastAPI)
+- **Docker Compose** (service orchestration)
 
 ---
 
-## Model Justification
 
-Selected the `distilbert-base-uncased-finetuned-sst-2-english` model due to its balance of performance and speed. It supports accurate sentiment classification while maintaining lightweight resource usage, ideal for real-time inference services.
+
 
 ---
 
-##  Setup
+## Deployment Steps
 
-### 🔧Build Docker Image
+### Step 1: Build and Launch the Services
+
+From the root directory:
 
 ```bash
-docker build -t huggingface-inference-api .
+docker-compose up --build -d
 ```
-###  Run Docker Container
+
+This will:
+- Build the FastAPI app container
+- Launch a Gunicorn server with Uvicorn workers
+- Start an NGINX container as a reverse proxy on port 80
+
+---
+
+### Step 2: Test the API
+
+Send a POST request to the `/predict` endpoint:
 
 ```bash
-docker run -p 8000:8000 huggingface-inference-api
+curl -X POST http://localhost/predict \
+     -H "Content-Type: application/json" \
+     -d '{"text": "This service is awesome!"}'
 ```
+
+Expected response:
+
+```json
+{
+  "result": [
+    {
+      "label": "POSITIVE",
+      "score": 0.9998
+    }
+  ]
+}
+```
+
+---
+
+### Step 3: Stop and Clean Up
+
+To stop all containers:
+
+```bash
+docker-compose down
+```
+
+---
+
+## Notes
+
+- Gunicorn is configured with 4 Uvicorn workers for concurrent handling of requests (`gunicorn_conf.py`)
+- NGINX forwards requests from port 80 to Gunicorn's internal port 8000
+- You can scale workers or add HTTPS in `nginx/default.conf` with Certbot integration
+- All configs are lightweight and suitable for cloud deployment
+
+---
+
+## Load Testing
+
+Run `notebook_demo.ipynb` to simulate concurrent user requests via `ThreadPoolExecutor`.
+
