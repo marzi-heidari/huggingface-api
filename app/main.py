@@ -7,12 +7,19 @@ Includes a `/predict` endpoint that accepts POST requests and returns sentiment 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from app.model import predict
+from app.logging_config import setup_logging, logger
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI(
     title="HuggingFace Sentiment Analysis API",
     description="A scalable inference service for HuggingFace transformer models.",
     version="1.0.0"
 )
+setup_logging()
+
+# Attach Prometheus monitoring
+Instrumentator().instrument(app).expose(app)
+
 
 class InferenceRequest(BaseModel):
     text: str = Field(..., example="The product was excellent and exceeded expectations.")
@@ -65,11 +72,15 @@ async def run_inference(request: InferenceRequest):
     - This endpoint supports real-time inference and is optimized for low-latency responses.
     - It uses the `distilbert-base-uncased-finetuned-sst-2-english` model.
     """
+    logger.info(f"Received inference request: {request.text}")
     try:
         output = predict(request.text)
+        logger.info(f"Inference result: {output}")
         return {"result": output}
     except ValueError as ve:
+        logger.warning(f"Validation error: {ve}")
         raise HTTPException(status_code=400, detail=str(ve))
     except RuntimeError as re:
+        logger.error(f"Inference failed: {re}")
         raise HTTPException(status_code=500, detail=str(re))
 
