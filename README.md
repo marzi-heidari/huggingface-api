@@ -79,3 +79,49 @@ docker-compose down
 
 Run `notebook_demo.ipynb` to simulate concurrent user requests via `ThreadPoolExecutor`.
 
+## Bonus Features
+
+
+### Continuous Integration (CI)
+
+This project includes a GitHub Actions pipeline that runs automatically on every push or pull request to `main`.
+
+The pipeline performs:
+
+* ✅ Unit tests with `pytest`
+* ✅ Docker image build (optional)
+* ✅ Quick feedback on API correctness
+
+Workflow file: `.github/workflows/ci.yml`
+
+---
+
+###  Logging
+
+The API includes structured logging using Python’s `logging` module.
+
+Logs include:
+
+* Timestamp
+* Log level (INFO, ERROR)
+* Message (e.g., input text, prediction output, errors)
+
+These logs appear in the container stdout and are ready for redirection to file or external log services.
+
+---
+
+###  Monitoring with Prometheus & Grafana
+
+Observability is integrated with:
+
+* `/metrics` endpoint exposed by the FastAPI app
+* Prometheus scraping metrics every 15s
+* Grafana for dashboarding
+
+| Service    | URL                                                  |
+| ---------- | ---------------------------------------------------- |
+| API        | [http://localhost/predict](http://localhost/predict) |
+| Metrics    | [http://localhost/metrics](http://localhost/metrics) |
+| Grafana    | [http://localhost:3000](http://localhost:3000)       |
+| Prometheus | [http://localhost:9090](http://localhost:9090)       |
+
