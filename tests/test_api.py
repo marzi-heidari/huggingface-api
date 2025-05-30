@@ -1,5 +1,5 @@
 """
-Unit tests for HuggingFace Inference API.
+Unit tests for HuggingFace Sentiment Analysis API with error handling.
 """
 
 import pytest
@@ -9,58 +9,52 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_healthcheck_predict_valid_input():
+def test_predict_valid_input():
     """
-    Test /predict endpoint with valid input.
+    Test /predict with a valid sentence.
+    Should return 200 and correct structure.
     """
-    payload = {"text": "The service was outstanding and fast!"}
+    payload = {"text": "This product exceeded expectations!"}
     response = client.post("/predict", json=payload)
 
     assert response.status_code == 200
-    assert "result" in response.json()
-    assert isinstance(response.json()["result"], list)
-    assert "label" in response.json()["result"][0]
-    assert "score" in response.json()["result"][0]
+    data = response.json()["result"][0]
+    assert "label" in data and data["label"] in ["POSITIVE", "NEGATIVE"]
+    assert "score" in data and 0.0 <= data["score"] <= 1.0
 
 
 def test_predict_missing_text_field():
     """
-    Test /predict endpoint with missing 'text' key.
+    Test /predict with no 'text' key in payload.
+    Should return 422 from FastAPI input validation.
     """
-    payload = {}  # missing 'text'
+    payload = {}
     response = client.post("/predict", json=payload)
 
     assert response.status_code == 422
     assert response.json()["detail"][0]["loc"][-1] == "text"
 
 
-def test_predict_empty_text_string():
+def test_predict_empty_text():
     """
-    Test /predict endpoint with empty input string.
+    Test /predict with empty string.
+    Should return 400 with proper error message.
     """
     payload = {"text": ""}
     response = client.post("/predict", json=payload)
 
-    assert response.status_code == 200
-    result = response.json()["result"][0]
-    assert result["label"] in ["POSITIVE", "NEGATIVE"]
-    assert 0.0 <= result["score"] <= 1.0
+    assert response.status_code == 400
+    assert "Input must be a non-empty string" in response.text
 
 
-@pytest.mark.parametrize("text", [
-    "I love it.",
-    "I hate this.",
-    "It was okay.",
-    "This product is garbage.",
-    "Absolutely wonderful!"
-])
-def test_predict_multiple_inputs(text):
+@pytest.mark.parametrize("bad_input", [None, 123, {}, [], True])
+def test_predict_invalid_input_types(bad_input):
     """
-    Parameterized test for different input sentiments.
+    Test /predict with various non-string payloads.
+    Should return 422 from FastAPI input validation (before reaching model).
     """
-    response = client.post("/predict", json={"text": text})
+    response = client.post("/predict", json={"text": bad_input})
+    assert response.status_code == 422
 
-    assert response.status_code == 200
-    result = response.json()["result"][0]
-    assert result["label"] in ["POSITIVE", "NEGATIVE"]
-    assert 0.0 <= result["score"] <= 1.0
+
+
