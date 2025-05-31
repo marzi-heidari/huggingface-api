@@ -1,4 +1,4 @@
-# HuggingFace Inference API (Production-Ready Setup)
+# HuggingFace Inference API
 
 This project provides a containerized, scalable REST API for serving HuggingFace transformer models using FastAPI, with a robust production setup including:
 
@@ -6,9 +6,6 @@ This project provides a containerized, scalable REST API for serving HuggingFace
 - **Gunicorn** (process manager)
 - **Uvicorn** (ASGI server for FastAPI)
 - **Docker Compose** (service orchestration)
-
----
-
 
 
 
